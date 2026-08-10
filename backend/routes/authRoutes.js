@@ -1,5 +1,6 @@
 const express = require("express");
 const upload = require("../middlewares/uploadMiddlewares");
+const cloudinary = require("../config/cloudinary");
 const {
   register,
   login,
@@ -23,19 +24,41 @@ router.get("/me", protect, getMe);
 router.post(
   "/upload-image",
   upload.single("image"),
-  (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({
-        message: "No file uploaded",
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          message: "No file uploaded",
+        });
+      }
+
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "job-portal/profile-images",
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        );
+
+        stream.end(req.file.buffer);
+      });
+
+      res.status(200).json({
+        imageUrl: result.secure_url,
+      });
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+
+      res.status(500).json({
+        message: "Image upload failed",
       });
     }
-
-    const imageUrl =
-      `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-
-    res.status(200).json({
-      imageUrl,
-    });
   }
 );
 router.post(
