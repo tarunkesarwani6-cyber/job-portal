@@ -1,0 +1,8 @@
+node_modules/
+.env
+backend/.env
+frontend/jobportal/.env
+uploads/
+backend/uploads/
+dist/
+frontend/jobportal/dist/
