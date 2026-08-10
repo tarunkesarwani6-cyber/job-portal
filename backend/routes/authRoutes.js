@@ -64,13 +64,43 @@ router.post(
 router.post(
   "/upload-resume",
   resumeUpload.single("resume"),
-  (req, res) => {
-    const resumeUrl =
-      `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          message: "No file uploaded",
+        });
+      }
 
-    res.json({
-      resumeUrl,
-    });
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "job-portal/resumes",
+            resource_type: "raw",
+            public_id: `${Date.now()}-${req.file.originalname}`,
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        );
+
+        stream.end(req.file.buffer);
+      });
+
+      res.status(200).json({
+        resumeUrl: result.secure_url,
+      });
+    } catch (error) {
+      console.error("Cloudinary resume upload error:", error);
+
+      res.status(500).json({
+        message: "Resume upload failed",
+      });
+    }
   }
 );
 module.exports = router;
