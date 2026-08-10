@@ -1,4 +1,4 @@
-export const BASE_URL = "http://127.0.0.1:8000";
+export const BASE_URL = "https://job-portal-backend-m75t.onrender.com";
 export const API_PATHS = {
     AUTH: {
         REGISTER: "/api/auth/register",
