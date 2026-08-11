@@ -76,7 +76,7 @@ router.post(
         const stream = cloudinary.uploader.upload_stream(
           {
             folder: "job-portal/resumes",
-            resource_type: "raw",
+            resource_type: "image",
             public_id: `${Date.now()}-${req.file.originalname}`,
           },
           (error, result) => {
