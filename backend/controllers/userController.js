@@ -1,5 +1,6 @@
-const fs = require("fs");
-const path = require("path");
+
+const User = require("../models/User");
+const cloudinary = require("../config/cloudinary");
 const User = require("../models/User");
 
 // Update Profile
