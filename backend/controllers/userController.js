@@ -78,53 +78,68 @@ exports.updateProfile = async (req, res) => {
 };
 
 // Delete Resume
+// Delete Resume
 exports.deleteResume = async (req, res) => {
-    try {
-        const { resumeUrl } = req.body;
+  try {
+    const { resumeUrl } = req.body;
 
-        // Extract file name
-        const fileName = resumeUrl.split("/").pop();
+    const user = await User.findById(req.user._id);
 
-        const user = await User.findById(req.user._id);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found",
-            });
-        }
-
-        if (user.role !== "jobseeker") {
-            return res.status(403).json({
-                message: "Only jobseekers can delete resume",
-            });
-        }
-
-        // Build path
-        const filePath = path.join(
-            __dirname,
-            "../uploads",
-            fileName
-        );
-
-        // Delete file if exists
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-
-        // Remove resume from DB
-        user.resume = "";
-
-        await user.save();
-
-        res.json({
-            message: "Resume deleted successfully",
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            message: err.message,
-        });
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
+
+    if (user.role !== "jobseeker") {
+      return res.status(403).json({
+        message: "Only jobseekers can delete resume",
+      });
+    }
+
+    if (!resumeUrl) {
+      return res.status(400).json({
+        message: "Resume URL is required",
+      });
+    }
+
+    // Extract Cloudinary public ID from URL
+    const urlParts = resumeUrl.split("/upload/");
+
+    if (urlParts.length < 2) {
+      return res.status(400).json({
+        message: "Invalid Cloudinary resume URL",
+      });
+    }
+
+    let publicId = urlParts[1];
+
+    // Remove version number, e.g. v123456789/
+    publicId = publicId.replace(/^v\d+\//, "");
+
+    // Remove file extension
+    publicId = publicId.replace(/\.[^/.]+$/, "");
+
+    // Delete file from Cloudinary
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: "raw",
+    });
+
+    // Remove resume URL from database
+    user.resume = "";
+
+    await user.save();
+
+    res.json({
+      message: "Resume deleted successfully",
+    });
+  } catch (err) {
+    console.error("Cloudinary resume deletion error:", err);
+
+    res.status(500).json({
+      message: err.message,
+    });
+  }
 };
 
 // Public Profile
